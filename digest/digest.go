@@ -5,7 +5,10 @@ import (
 	"hash"
 	"io"
 	"regexp"
+	"runtime/debug"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 )
 
 const (
@@ -84,18 +87,22 @@ func FromBytes(p []byte) Digest {
 // error if not.
 func (d Digest) Validate() error {
 	s := string(d)
-
+	logrus.Errorf("validate:%v", s)
+	logrus.Errorf("validate stack:%v", string(debug.Stack()))
 	if !DigestRegexpAnchored.MatchString(s) {
+		logrus.Errorf("validation failed with string %v, invalid format", s)
 		return ErrDigestInvalidFormat
 	}
 
 	i := strings.Index(s, ":")
 	if i < 0 {
+		logrus.Errorf("validation failed with string %v, no : found", s)
 		return ErrDigestInvalidFormat
 	}
 
 	// case: "sha256:" with no hex.
 	if i+1 == len(s) {
+		logrus.Errorf("validation failed with string %v, no hex found", s)
 		return ErrDigestInvalidFormat
 	}
 
