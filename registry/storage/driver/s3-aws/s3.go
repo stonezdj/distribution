@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -44,6 +45,8 @@ import (
 )
 
 const driverName = "s3aws"
+
+var cleanupHours = 1 // cleanup multipart upload exceed 1 hour
 
 // minChunkSize defines the minimum multipart upload chunk size
 // S3 API requires multipart upload chunks to be at least 5MB
@@ -128,6 +131,15 @@ func init() {
 	// Register this as the default s3 driver in addition to s3aws
 	factory.Register("s3", &s3DriverFactory{})
 	factory.Register(driverName, &s3DriverFactory{})
+
+	multipartExpiresStr := os.Getenv("MULTIPART_EXPIRE_HOUR")
+	if len(multipartExpiresStr) > 0 {
+		expireHour, err := strconv.Atoi(multipartExpiresStr)
+		if err != nil {
+			cleanupHours = expireHour
+		}
+	}
+
 }
 
 // s3DriverFactory implements the factory.StorageDriverFactory interface
@@ -547,11 +559,51 @@ func (d *driver) Reader(ctx context.Context, path string, offset int64) (io.Read
 	return resp.Body, nil
 }
 
+func (d *driver) abortMultiPartUpload(bucket, path string) {
+	prefix := d.RootDirectory + path
+	resp, err := d.S3.ListMultipartUploads(&s3.ListMultipartUploadsInput{
+		Bucket:     aws.String(bucket),
+		Prefix:     aws.String(prefix),
+		MaxUploads: aws.Int64(1000),
+	})
+	for i, multi := range resp.Uploads {
+		fmt.Printf("  Upload %d: %s\n", i, *multi.Key)
+
+		hoursSince := int(time.Since(*multi.Initiated).Hours())
+
+		fmt.Printf("  Started %d hours ago\n", hoursSince)
+
+		if hoursSince >= cleanupHours {
+			fmt.Printf("bucket %v, key: %+v, uploadID: %+v\n", bucket, *multi.Key, *multi.UploadId)
+			_, err = d.S3.AbortMultipartUpload(&s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(bucket),
+				Key:      multi.Key,
+				UploadId: multi.UploadId,
+			})
+
+			if err != nil {
+				fmt.Printf(" ERROR: %s\n", err)
+			} else {
+				fmt.Printf("multipart: %v removed!\n", multi.Key)
+			}
+		}
+	}
+}
+
+func getRepoPath(uploadPath string) string {
+	if strings.Contains(uploadPath, "/_uploads/") {
+		index := strings.LastIndex(uploadPath, "/_uploads/")
+		return uploadPath[:index]
+	}
+	return uploadPath
+}
+
 // Writer returns a FileWriter which will store the content written to it
 // at the location designated by "path" after the call to Commit.
 func (d *driver) Writer(ctx context.Context, path string, append bool) (storagedriver.FileWriter, error) {
 	key := d.s3Path(path)
 	if !append {
+		d.abortMultiPartUpload(d.Bucket, getRepoPath(path))
 		// TODO (brianbland): cancel other uploads at this path
 		resp, err := d.S3.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
 			Bucket:               aws.String(d.Bucket),
