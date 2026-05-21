@@ -8,7 +8,7 @@ FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS base
 COPY --from=xx / /
 RUN apk add --no-cache bash coreutils file git
-ENV GO111MODULE=auto
+ENV GO111MODULE=on
 ENV CGO_ENABLED=0
 WORKDIR /go/src/github.com/docker/distribution
 

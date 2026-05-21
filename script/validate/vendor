@@ -2,14 +2,11 @@
 
 set -eu -o pipefail
 
-rm -rf vendor/
-# Prevent the data directory from being pruned; this directory does not contain
-# go source files (causing vndr to prune it), however these files are used by
-# golang.org/x/net/publicsuffix through go:embed.
-vndr -whitelist golang.org/x/net/publicsuffix/data |& grep -v -i clone
+go mod tidy -compat=1.20
+go mod vendor
 
-DIFF_PATH="vendor/"
-DIFF=$(git status --porcelain -- "$DIFF_PATH")
+DIFF_PATHS="go.mod go.sum vendor/"
+DIFF=$(git status --porcelain -- ${DIFF_PATHS})
 
 if [ "$DIFF" ]; then
     echo
@@ -19,5 +16,5 @@ if [ "$DIFF" ]; then
     echo
     exit 1
 else
-    echo "$DIFF_PATH is correct"
+    echo "$DIFF_PATHS are correct"
 fi
