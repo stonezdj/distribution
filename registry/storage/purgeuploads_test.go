@@ -115,7 +115,7 @@ func TestPurgeOnlyUploads(t *testing.T) {
 	// these files aren't deleted.
 	dataPath, err := pathFor(uploadDataPathSpec{name: "test-repo", id: uuid.Generate().String()})
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	nonUploadPath := strings.Replace(dataPath, "_upload", "_important", -1)
 	if strings.Contains(nonUploadPath, "_upload") {

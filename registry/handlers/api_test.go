@@ -885,7 +885,7 @@ func testBlobDelete(t *testing.T, env *testEnv, args blobArgs) {
 	ref, _ := reference.WithDigest(imageName, layerDigest)
 	layerURL, err := env.builder.BuildBlobURL(ref)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	// ---------------
 	// Delete a layer

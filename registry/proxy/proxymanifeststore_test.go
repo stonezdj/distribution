@@ -115,7 +115,7 @@ func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestE
 
 	manifestDigest, err := populateRepo(ctx, t, truthRepo, name, tag)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	localRegistry, err := storage.NewRegistry(ctx, inmemory.New(), storage.BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), storage.EnableRedirect, storage.DisableDigestResumption, storage.Schema1SigningKey(k), storage.EnableSchema1)
@@ -190,7 +190,7 @@ func populateRepo(ctx context.Context, t *testing.T, repository distribution.Rep
 
 	ms, err := repository.Manifests(ctx)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	dgst, err := ms.Put(ctx, sm)
 	if err != nil {

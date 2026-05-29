@@ -78,10 +78,43 @@ func TestGracefulShutdown(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	originalHandler := registry.server.Handler
+	requestStarted := make(chan struct{}, 1)
+	finishRequest := make(chan struct{})
+	requestReleased := false
+	releaseRequest := func() {
+		if !requestReleased {
+			close(finishRequest)
+			requestReleased = true
+		}
+	}
+	registry.server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v2/" {
+			requestStarted <- struct{}{}
+			<-finishRequest
+		}
+		originalHandler.ServeHTTP(w, r)
+	})
+
 	// run registry server
-	var errchan chan error
+	errchan := make(chan error, 1)
+	shutdownStarted := false
+	serverStopped := false
 	go func() {
 		errchan <- registry.ListenAndServe()
+	}()
+	defer func() {
+		releaseRequest()
+		if !serverStopped {
+			if !shutdownStarted {
+				quit <- os.Interrupt
+			}
+			select {
+			case <-errchan:
+			case <-time.After(5 * time.Second):
+				t.Error("timed out waiting for registry to stop")
+			}
+		}
 	}()
 	select {
 	case err = <-errchan:
@@ -92,15 +125,22 @@ func TestGracefulShutdown(t *testing.T) {
 	// Wait for some unknown random time for server to start listening
 	time.Sleep(3 * time.Second)
 
-	// send incomplete request
 	conn, err := net.Dial("tcp", "localhost:5000")
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Fprintf(conn, "GET /v2/ ")
+	defer conn.Close()
+	fmt.Fprintf(conn, "GET /v2/ HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+
+	select {
+	case <-requestStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for request handler to start")
+	}
 
 	// send stop signal
 	quit <- os.Interrupt
+	shutdownStarted = true
 	time.Sleep(100 * time.Millisecond)
 
 	// try connecting again. it shouldn't
@@ -110,7 +150,7 @@ func TestGracefulShutdown(t *testing.T) {
 	}
 
 	// make sure earlier request is not disconnected and response can be received
-	fmt.Fprintf(conn, "HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+	releaseRequest()
 	resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -120,6 +160,16 @@ func TestGracefulShutdown(t *testing.T) {
 	}
 	if body, err := ioutil.ReadAll(resp.Body); err != nil || string(body) != "{}" {
 		t.Error("Body is not {}; ", string(body))
+	}
+
+	select {
+	case err = <-errchan:
+		serverStopped = true
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for registry to stop")
 	}
 }
 
