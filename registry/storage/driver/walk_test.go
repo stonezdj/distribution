@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 )
 
@@ -39,9 +38,9 @@ func TestWalkFileRemoved(t *testing.T) {
 		return nil
 	})
 	if len(infos) != 1 || infos[0].Path() != "zoidberg" {
-		t.Errorf(fmt.Sprintf("unexpected path set during walk: %s", infos))
+		t.Errorf("unexpected path set during walk: %s", infos)
 	}
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }

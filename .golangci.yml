@@ -4,7 +4,6 @@ linters:
     - unconvert
     - gofmt
     - goimports
-    - golint
     - ineffassign
     - vet
     - unused
@@ -29,5 +28,20 @@ issues:
   exclude-rules:
     # io/ioutil is deprecated, but won't be removed until Go v2. It's safe to ignore for the release/2.8 branch.
     - text: "SA1019: \"io/ioutil\" has been deprecated"
+      linters:
+        - staticcheck
+
+    # Keep legacy code unchanged; suppress printf-style findings globally.
+    - text: 'printf: non-constant format string in call to \(\*testing\.common\)\.(Fatalf|Errorf)'
+      linters:
+        - govet
+
+    # Keep legacy code unchanged; suppress staticcheck's equivalent printf-style findings globally.
+    - text: 'SA1006: printf-style function with dynamic format string and no further arguments should use print-style function instead'
+      linters:
+        - staticcheck
+
+    # aws-sdk-go v1 is deprecated upstream; suppress only AWS SDK v1 deprecation findings.
+    - text: 'SA1019: "github\.com/aws/aws-sdk-go/.*" is deprecated'
       linters:
         - staticcheck
