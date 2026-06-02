@@ -28,7 +28,7 @@ require (
 	google.golang.org/api v0.0.0-20160322025152-9bf6e6e569ff
 	google.golang.org/cloud v0.0.0-20151119220103-975617b05ea8
 	gopkg.in/check.v1 v1.0.0-20141024133853-64131543e789
-	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/yaml.v2 v2.4.0
 	rsc.io/letsencrypt v0.0.0-20161112011014-e770c10b0f1a
 )
 
@@ -64,6 +64,7 @@ require (
 	google.golang.org/appengine v0.0.0-20160301025000-12d5545dc1cf // indirect
 	google.golang.org/grpc v0.0.0-20160317175043-d3ddb4469d5a // indirect
 	gopkg.in/square/go-jose.v1 v1.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace rsc.io/letsencrypt => github.com/dmcgowan/letsencrypt v0.0.0-20161112011014-e770c10b0f1a
