@@ -275,9 +275,11 @@ gopkg.in/check.v1
 gopkg.in/square/go-jose.v1
 gopkg.in/square/go-jose.v1/cipher
 gopkg.in/square/go-jose.v1/json
+# gopkg.in/yaml.v2 v2.4.0
+## explicit; go 1.15
+gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
-gopkg.in/yaml.v3
 # rsc.io/letsencrypt v0.0.0-20161112011014-e770c10b0f1a => github.com/dmcgowan/letsencrypt v0.0.0-20161112011014-e770c10b0f1a
 ## explicit
 rsc.io/letsencrypt
