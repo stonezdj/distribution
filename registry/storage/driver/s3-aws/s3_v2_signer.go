@@ -24,7 +24,7 @@ package s3
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- HMAC-SHA1 is required by AWS Signature V2; safe because HMAC does not rely on the hash's collision resistance.
 	"encoding/base64"
 	"net/http"
 	"net/url"
@@ -198,7 +198,9 @@ func (v2 *signer) Sign() error {
 		date,
 		xamz + canonicalPath,
 	}, "\n")
-	hash := hmac.New(sha1.New, []byte(credValue.SecretAccessKey))
+	// HMAC-SHA1 is required by AWS Signature V2 and is safe here: HMAC does not
+	// rely on SHA-1 collision resistance, so SHAttered does not apply.
+	hash := hmac.New(sha1.New, []byte(credValue.SecretAccessKey)) // #nosec G401 -- protocol-mandated HMAC-SHA1; safe, see comment above.
 	hash.Write([]byte(v2.stringToSign))
 	v2.signature = base64.StdEncoding.EncodeToString(hash.Sum(nil))
 

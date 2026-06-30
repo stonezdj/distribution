@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
@@ -187,7 +187,12 @@ func New(params Parameters) (*Driver, error) {
 	transport := &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,
 		MaxIdleConnsPerHost: 2048,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: params.InsecureSkipVerify},
+		// InsecureSkipVerify is an explicit, opt-in parameter that defaults to
+		// false (certificate verification enabled). It exists only to support
+		// Swift endpoints fronted by self-signed or internal CAs; operators must
+		// deliberately enable it. Verification therefore stays on unless the
+		// administrator turns it off.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: params.InsecureSkipVerify}, // #nosec G402 -- opt-in, defaults to secure (false); see comment above.
 	}
 
 	ct := &swift.Connection{
@@ -668,7 +673,10 @@ func (d *driver) swiftPath(path string) string {
 }
 
 func (d *driver) swiftSegmentPath(path string) (string, error) {
-	checksum := sha1.New()
+	// Generate a unique, random path for the segment. SHA-256 is used here
+	// instead of SHA-1; the value includes random bytes and is stored in the
+	// manifest, so existing data is unaffected.
+	checksum := sha256.New()
 	random := make([]byte, 32)
 	if _, err := rand.Read(random); err != nil {
 		return "", err
