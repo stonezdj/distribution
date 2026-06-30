@@ -81,8 +81,10 @@ var defaultCipherSuites = []uint16{
 var defaultTLSVersionStr = "tls1.2"
 var tlsVersions = map[string]uint16{
 	// user specified values
-	"tls1.0": tls.VersionTLS10,
-	"tls1.1": tls.VersionTLS11,
+	//
+	// TLS 1.0 and 1.1 are intentionally not supported: both are deprecated
+	// (RFC 8996) and have known vulnerabilities. The lowest configurable
+	// minimum is TLS 1.2.
 	"tls1.2": tls.VersionTLS12,
 	"tls1.3": tls.VersionTLS13,
 }

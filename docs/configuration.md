@@ -824,7 +824,7 @@ and proxy connections to the registry server.
 | `certificate`  | yes  | Absolute path to the x509 certificate file.           |
 | `key`          | yes  | Absolute path to the x509 private key file.           |
 | `clientcas`    | no   | An array of absolute paths to x509 CA files.          |
-| `minimumtls`   | no   | Minimum TLS version allowed (tls1.0, tls1.1, tls1.2, tls1.3). Defaults to tls1.2 |
+| `minimumtls`   | no   | Minimum TLS version allowed (tls1.2, tls1.3). Defaults to tls1.2. TLS 1.0 and 1.1 are deprecated and no longer supported. |
 | `ciphersuites` | no   | Cipher suites allowed. Please see below for allowed values and default. |
 
 Available cipher suites:
