@@ -9,16 +9,15 @@
 package jwt
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
 	"golang.org/x/oauth2/jws"
@@ -46,6 +45,10 @@ type Config struct {
 	//
 	PrivateKey []byte
 
+	// PrivateKeyID contains an optional hint indicating which key is being
+	// used.
+	PrivateKeyID string
+
 	// Subject is the optional user to impersonate.
 	Subject string
 
@@ -57,6 +60,19 @@ type Config struct {
 
 	// Expires optionally specifies how long the token is valid for.
 	Expires time.Duration
+
+	// Audience optionally specifies the intended audience of the
+	// request.  If empty, the value of TokenURL is used as the
+	// intended audience.
+	Audience string
+
+	// PrivateClaims optionally specifies custom private claims in the JWT.
+	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
+	PrivateClaims map[string]any
+
+	// UseIDToken optionally specifies whether ID token should be used instead
+	// of access token when the server returns both.
+	UseIDToken bool
 }
 
 // TokenSource returns a JWT TokenSource using the configuration
@@ -88,9 +104,10 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	}
 	hc := oauth2.NewClient(js.ctx, nil)
 	claimSet := &jws.ClaimSet{
-		Iss:   js.conf.Email,
-		Scope: strings.Join(js.conf.Scopes, " "),
-		Aud:   js.conf.TokenURL,
+		Iss:           js.conf.Email,
+		Scope:         strings.Join(js.conf.Scopes, " "),
+		Aud:           js.conf.TokenURL,
+		PrivateClaims: js.conf.PrivateClaims,
 	}
 	if subject := js.conf.Subject; subject != "" {
 		claimSet.Sub = subject
@@ -101,7 +118,12 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	if t := js.conf.Expires; t > 0 {
 		claimSet.Exp = time.Now().Add(t).Unix()
 	}
-	payload, err := jws.Encode(defaultHeader, claimSet, pk)
+	if aud := js.conf.Audience; aud != "" {
+		claimSet.Aud = aud
+	}
+	h := *defaultHeader
+	h.KeyID = js.conf.PrivateKeyID
+	payload, err := jws.Encode(&h, claimSet, pk)
 	if err != nil {
 		return nil, err
 	}
@@ -113,19 +135,20 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", resp.Status, body)
+		return nil, &oauth2.RetrieveError{
+			Response: resp,
+			Body:     body,
+		}
 	}
 	// tokenRes is the JSON response body.
 	var tokenRes struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		IDToken     string `json:"id_token"`
-		ExpiresIn   int64  `json:"expires_in"` // relative seconds from now
+		oauth2.Token
+		IDToken string `json:"id_token"`
 	}
 	if err := json.Unmarshal(body, &tokenRes); err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
@@ -134,7 +157,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		AccessToken: tokenRes.AccessToken,
 		TokenType:   tokenRes.TokenType,
 	}
-	raw := make(map[string]interface{})
+	raw := make(map[string]any)
 	json.Unmarshal(body, &raw) // no error checks for optional fields
 	token = token.WithExtra(raw)
 
@@ -148,6 +171,12 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 			return nil, fmt.Errorf("oauth2: error decoding JWT token: %v", err)
 		}
 		token.Expiry = time.Unix(claimSet.Exp, 0)
+	}
+	if js.conf.UseIDToken {
+		if tokenRes.IDToken == "" {
+			return nil, fmt.Errorf("oauth2: response doesn't have JWT token")
+		}
+		token.AccessToken = tokenRes.IDToken
 	}
 	return token, nil
 }

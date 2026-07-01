@@ -2,8 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package jws provides encoding and decoding utilities for
-// signed JWS messages.
+// Package jws provides a partial implementation
+// of JSON Web Signature encoding and decoding.
+// It exists to support the [golang.org/x/oauth2] package.
+//
+// See RFC 7515.
+//
+// Deprecated: this package is not intended for public use and might be
+// removed in the future. It exists for internal use only.
+// Please switch to another JWS package or copy this package into your own
+// source tree.
 package jws // import "golang.org/x/oauth2/jws"
 
 import (
@@ -40,7 +48,7 @@ type ClaimSet struct {
 
 	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
 	// This array is marshalled using custom code (see (c *ClaimSet) encode()).
-	PrivateClaims map[string]interface{} `json:"-"`
+	PrivateClaims map[string]any `json:"-"`
 }
 
 func (c *ClaimSet) encode() (string, error) {
@@ -64,7 +72,7 @@ func (c *ClaimSet) encode() (string, error) {
 	}
 
 	if len(c.PrivateClaims) == 0 {
-		return base64Encode(b), nil
+		return base64.RawURLEncoding.EncodeToString(b), nil
 	}
 
 	// Marshal private claim set and then append it to b.
@@ -82,7 +90,7 @@ func (c *ClaimSet) encode() (string, error) {
 	}
 	b[len(b)-1] = ','         // Replace closing curly brace with a comma.
 	b = append(b, prv[1:]...) // Append private claims.
-	return base64Encode(b), nil
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 // Header represents the header for the signed JWS payloads.
@@ -92,6 +100,9 @@ type Header struct {
 
 	// Represents the token type.
 	Typ string `json:"typ"`
+
+	// The optional hint of which key is being used.
+	KeyID string `json:"kid,omitempty"`
 }
 
 func (h *Header) encode() (string, error) {
@@ -99,18 +110,18 @@ func (h *Header) encode() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return base64Encode(b), nil
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 // Decode decodes a claim set from a JWS payload.
 func Decode(payload string) (*ClaimSet, error) {
 	// decode returned id token to get expiry
-	s := strings.Split(payload, ".")
-	if len(s) < 2 {
+	_, claims, _, ok := parseToken(payload)
+	if !ok {
 		// TODO(jbd): Provide more context about the error.
 		return nil, errors.New("jws: invalid token received")
 	}
-	decoded, err := base64Decode(s[1])
+	decoded, err := base64.RawURLEncoding.DecodeString(claims)
 	if err != nil {
 		return nil, err
 	}
@@ -137,36 +148,51 @@ func EncodeWithSigner(header *Header, c *ClaimSet, sg Signer) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s.%s", ss, base64Encode(sig)), nil
+	return fmt.Sprintf("%s.%s", ss, base64.RawURLEncoding.EncodeToString(sig)), nil
 }
 
 // Encode encodes a signed JWS with provided header and claim set.
-// This invokes EncodeWithSigner using crypto/rsa.SignPKCS1v15 with the given RSA private key.
+// This invokes [EncodeWithSigner] using [crypto/rsa.SignPKCS1v15] with the given RSA private key.
 func Encode(header *Header, c *ClaimSet, key *rsa.PrivateKey) (string, error) {
 	sg := func(data []byte) (sig []byte, err error) {
 		h := sha256.New()
-		h.Write([]byte(data))
+		h.Write(data)
 		return rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, h.Sum(nil))
 	}
 	return EncodeWithSigner(header, c, sg)
 }
 
-// base64Encode returns and Base64url encoded version of the input string with any
-// trailing "=" stripped.
-func base64Encode(b []byte) string {
-	return strings.TrimRight(base64.URLEncoding.EncodeToString(b), "=")
+// Verify tests whether the provided JWT token's signature was produced by the private key
+// associated with the supplied public key.
+func Verify(token string, key *rsa.PublicKey) error {
+	header, claims, sig, ok := parseToken(token)
+	if !ok {
+		return errors.New("jws: invalid token received, token must have 3 parts")
+	}
+	signatureString, err := base64.RawURLEncoding.DecodeString(sig)
+	if err != nil {
+		return err
+	}
+
+	h := sha256.New()
+	h.Write([]byte(header + tokenDelim + claims))
+	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), signatureString)
 }
 
-// base64Decode decodes the Base64url encoded string
-func base64Decode(s string) ([]byte, error) {
-	// add back missing padding
-	switch len(s) % 4 {
-	case 1:
-		s += "==="
-	case 2:
-		s += "=="
-	case 3:
-		s += "="
+func parseToken(s string) (header, claims, sig string, ok bool) {
+	header, s, ok = strings.Cut(s, tokenDelim)
+	if !ok { // no period found
+		return "", "", "", false
 	}
-	return base64.URLEncoding.DecodeString(s)
+	claims, s, ok = strings.Cut(s, tokenDelim)
+	if !ok { // only one period found
+		return "", "", "", false
+	}
+	sig, _, ok = strings.Cut(s, tokenDelim)
+	if ok { // three periods found
+		return "", "", "", false
+	}
+	return header, claims, sig, true
 }
+
+const tokenDelim = "."

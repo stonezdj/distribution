@@ -366,7 +366,7 @@ func configureLogging(ctx context.Context, config *configuration.Configuration) 
 		})
 	case "logstash":
 		log.SetFormatter(&logstash.LogstashFormatter{
-			TimestampFormat: time.RFC3339Nano,
+			Formatter: &log.JSONFormatter{TimestampFormat: time.RFC3339Nano},
 		})
 	default:
 		// just let the library use default on empty string.

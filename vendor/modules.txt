@@ -1,3 +1,6 @@
+# cloud.google.com/go/compute/metadata v0.3.0
+## explicit; go 1.19
+cloud.google.com/go/compute/metadata
 # github.com/Azure/azure-sdk-for-go v16.2.1+incompatible
 ## explicit
 github.com/Azure/azure-sdk-for-go/storage
@@ -73,8 +76,8 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/beorn7/perks/quantile
 # github.com/bitly/go-simplejson v0.5.1
 ## explicit; go 1.17
-# github.com/bshuster-repo/logrus-logstash-hook v0.0.0-20170517171303-d2c0ecc1836d
-## explicit
+# github.com/bshuster-repo/logrus-logstash-hook v1.1.0
+## explicit; go 1.16
 github.com/bshuster-repo/logrus-logstash-hook
 # github.com/bugsnag/bugsnag-go v1.0.3-0.20141110184014-b1d153021fcd
 ## explicit
@@ -105,6 +108,9 @@ github.com/docker/go-metrics
 # github.com/docker/libtrust v0.0.0-20150114040149-fa567046d9b1
 ## explicit
 github.com/docker/libtrust
+# github.com/felixge/httpsnoop v1.0.3
+## explicit; go 1.13
+github.com/felixge/httpsnoop
 # github.com/golang/protobuf v0.0.0-20160321223353-8d92cf5fc15a
 ## explicit
 github.com/golang/protobuf/proto
@@ -114,8 +120,8 @@ github.com/gomodule/redigo/redis
 # github.com/gorilla/context v1.1.2
 ## explicit; go 1.20
 github.com/gorilla/context
-# github.com/gorilla/handlers v0.0.0-20150720190736-60c7bfde3e33
-## explicit
+# github.com/gorilla/handlers v1.5.2
+## explicit; go 1.20
 github.com/gorilla/handlers
 # github.com/gorilla/mux v1.3.1-0.20170228224354-599cba5e7b61
 ## explicit
@@ -173,8 +179,8 @@ github.com/prometheus/procfs/xfs
 # github.com/satori/go.uuid v1.2.0
 ## explicit
 github.com/satori/go.uuid
-# github.com/sirupsen/logrus v1.0.1-0.20170620144510-3d4380f53a34
-## explicit
+# github.com/sirupsen/logrus v1.9.4
+## explicit; go 1.17
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v1.10.2
 ## explicit; go 1.15
@@ -212,16 +218,22 @@ golang.org/x/net/internal/httpsfv
 golang.org/x/net/internal/timeseries
 golang.org/x/net/publicsuffix
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20160304213135-045497edb623
-## explicit
+# golang.org/x/oauth2 v0.35.0
+## explicit; go 1.24.0
 golang.org/x/oauth2
+golang.org/x/oauth2/authhandler
 golang.org/x/oauth2/google
+golang.org/x/oauth2/google/externalaccount
+golang.org/x/oauth2/google/internal/externalaccountauthorizeduser
+golang.org/x/oauth2/google/internal/impersonate
+golang.org/x/oauth2/google/internal/stsexchange
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sys v0.45.0
 ## explicit; go 1.25.0
 golang.org/x/sys/unix
+golang.org/x/sys/windows
 # golang.org/x/text v0.37.0
 ## explicit; go 1.25.0
 golang.org/x/text/secure/bidirule
@@ -237,22 +249,9 @@ google.golang.org/api/gensupport
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/internal/uritemplates
 google.golang.org/api/storage/v1
-# google.golang.org/appengine v0.0.0-20160301025000-12d5545dc1cf
-## explicit
-google.golang.org/appengine
-google.golang.org/appengine/internal
-google.golang.org/appengine/internal/app_identity
-google.golang.org/appengine/internal/base
-google.golang.org/appengine/internal/datastore
-google.golang.org/appengine/internal/log
-google.golang.org/appengine/internal/modules
-google.golang.org/appengine/internal/remote_api
-google.golang.org/appengine/internal/urlfetch
-google.golang.org/appengine/urlfetch
 # google.golang.org/cloud v0.0.0-20151119220103-975617b05ea8
 ## explicit
 google.golang.org/cloud
-google.golang.org/cloud/compute/metadata
 google.golang.org/cloud/internal
 google.golang.org/cloud/internal/opts
 google.golang.org/cloud/storage
@@ -278,8 +277,6 @@ gopkg.in/square/go-jose.v1/json
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.1
-## explicit
 # rsc.io/letsencrypt v0.0.0-20161112011014-e770c10b0f1a => github.com/dmcgowan/letsencrypt v0.0.0-20161112011014-e770c10b0f1a
 ## explicit
 rsc.io/letsencrypt
