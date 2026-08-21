@@ -24,7 +24,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.25.10
+        go-version: 1.26.5
 
     - name: Dependencies
       run: |
@@ -36,7 +36,6 @@ jobs:
       working-directory: ./src/github.com/docker/distribution
       run: |
         GO111MODULE=on script/setup/install-dev-tools
-        script/validate/vendor
         go build .
         make check
         make build

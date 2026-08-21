@@ -1,6 +1,6 @@
 module github.com/docker/distribution
 
-go 1.25.0
+go 1.26.5
 
 require (
 	github.com/Azure/azure-sdk-for-go v16.2.1+incompatible
@@ -59,7 +59,7 @@ require (
 	github.com/xenolf/lego v0.3.2-0.20160613233155-a9d8cec0e656 // indirect
 	github.com/yvasiyarov/go-metrics v0.0.0-20140926110328-57bccd1ccd43 // indirect
 	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.0.0-20160202183820-a4bde1265759 // indirect
